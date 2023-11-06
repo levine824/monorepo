@@ -12,7 +12,7 @@ on:
     paths:
       - 'app/**'
       - 'pkg/**'
-      - '**_test.go'
+      - '!**_test.go'
 
 jobs:
   changes:
