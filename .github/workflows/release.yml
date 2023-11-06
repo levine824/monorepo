@@ -1,0 +1,151 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+    # - '!v0.*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    outputs:
+      changelog: ${{ steps.build_changelog.outputs.changelog }}
+    steps:
+      # Changelog contains PRs labeled by 'feature' or 'fix'.
+      - id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    name: Release for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # os: [ubuntu-latest,windows-latest]
+        app_name: [ backend, frontend ]
+        include:
+          - os: ubuntu-latest
+            target_os: linux
+            target_arch: amd64
+        # - os: windows-latest
+        #   target_os: windows
+        #   target_arch: amd64
+        #   artifact_suffix: .exe
+    env:
+      REGISTRY: ghcr.io/levine824/monorepo
+      APP_NAME: ${{ matrix.app_name }}
+      TARGET_OS: ${{ matrix.target_os }}
+      TARGET_ARCH: ${{ matrix.target_arch }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.20.0'
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Set up buf
+        uses: bufbuild/buf-setup-action@v1.26.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set environment variables
+        run: |
+          tag=$(echo ${GITHUB_REF} | sed 's|refs/tags/v||')
+          echo "TAG=${tag}" >> $GITHUB_ENV
+          echo "VERSION=${tag}" >> $GITHUB_ENV
+          echo ARTIFACT_NAME=${{ matrix.app_name}}${{ matrix.artifact_suffix }} >> $GITHUB_ENV
+      - name: Build artifacts
+        run: |
+          echo "Buf generating..."
+          make buf-generate
+          
+          echo "Building artifacts..."
+          make go-build
+          
+          bin_dir="_output/bin"
+          target_dir="_output/artifacts/${TARGET_OS}-${TARGET_ARCH}"
+          
+          echo "moving artifacts to ${target_dir}..."
+          [ -d ${target_dir} ] || mkdir -p ${target_dir}
+          cp ${bin_dir}/${ARTIFACT_NAME} ${target_dir}
+      - name: Build images
+        if: (matrix.target_os == 'linux') && (matrix.target_arch == 'amd64')
+        run: |
+          echo "Building images..."
+          make docker-build
+          
+          image_archive_dir="_output/images"
+          
+          echo "archiving images to ${image_archive_dir}..."
+          make docker-save
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifacts
+          path: _output/artifacts/
+          retention-days: 5
+      - name: Upload images
+        if: (matrix.target_os == 'linux') && (matrix.target_arch == 'amd64')
+        uses: actions/upload-artifact@v3
+        with:
+          name: images
+          path: _output/images/${{ env.APP_NAME }}.tar.gz
+          retention-days: 5
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [ build,changelog ]
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: artifacts
+          path: artifacts
+      - uses: actions/download-artifact@v3
+        with:
+          name: images
+          path: images
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make assets
+        run: |
+          repo_name=$(echo ${GITHUB_REPOSITORY} | awk -F '/' '{print $2}')
+          assets_dir=assets
+          mkdir ${assets_dir}
+          for target in $(ls artifacts); do
+            asset_name="${repo_name}-${target}.tar.gz"
+            pushd "artifacts/${target}"
+            tar -zcvf ${asset_name} ./*
+            cp ${asset_name} ../../${assets_dir}
+            pushd +1
+          done
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          body: ${{ needs.changelog.outputs.changelog }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: assets/*.tar.gz
+      - name: Push images
+        run: |
+          for file in $(ls images); do
+            target_image=$(docker load -i images/${file} | awk -F ": " '{print $2}')
+            docker push ${target_image}
+          done

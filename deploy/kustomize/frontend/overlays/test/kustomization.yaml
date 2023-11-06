@@ -1,0 +1,10 @@
+namespace: test
+
+patches:
+  - path: patch.yaml
+    target:
+      kind: Deployment
+      name: frontend
+
+bases:
+  - ../../base

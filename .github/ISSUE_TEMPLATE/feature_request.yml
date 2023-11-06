@@ -1,0 +1,15 @@
+---
+name: Feature request
+description: Suggest an idea for this project.
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Please do *NOT* ask support questions in Github issues.
+  - type: textarea
+    attributes:
+      label: Proposal
+      description: Use case. Why is this important?
+      placeholder: “Nice to have” is not a good use case. :)
+    validations:
+      required: true

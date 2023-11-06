@@ -1,2 +1,2 @@
 # monorepo
-An example of a golang-based monorepo
+a go project for monorepo

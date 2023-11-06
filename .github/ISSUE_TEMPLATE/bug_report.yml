@@ -1,0 +1,54 @@
+---
+name: Bug report
+description: Create a report to help us improve.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for opening a bug report for this project.
+
+        Please do *NOT* ask support questions in Github issues.
+  - type: textarea
+    attributes:
+      label: What did you do?
+      description: Please provide steps for us to reproduce this issue.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What did you expect to see?
+  - type: textarea
+    attributes:
+      label: What did you see instead? Under which circumstances?
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        ## Environment
+  - type: input
+    attributes:
+      label: System information
+      description: Insert output of `uname -srm` here, or operating system version
+      placeholder: e.g. Linux 5.16.15 x86_64
+  - type: textarea
+    attributes:
+      label: version
+      description: Insert version here.
+      render: text
+      placeholder: |
+        e.g. version 2.23.0 (branch: HEAD, revision: 26d89b4b0776fe4cd5a3656dfa520f119a375273)
+          build user:       root@37609b3a0a21
+          build date:       20201126-10:56:17
+          go version:       go1.15.5
+          platform:         linux/amd64
+  - type: textarea
+    attributes:
+      label: Configuration file
+      description: Insert relevant configuration here. Don't forget to remove secrets.
+      render: yaml
+  - type: textarea
+    attributes:
+      label: Logs
+      description: Insert logs relevant to the issue here.
+      render: text

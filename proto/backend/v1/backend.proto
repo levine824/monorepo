@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package backend.v1;
+
+option go_package = "backend/v1;backendv1";
+
+import "google/api/annotations.proto";
+
+service MessageService {
+  rpc GetMessage(GetMessageRequest) returns(GetMessageResponse){
+    option (google.api.http) = {
+      get: "/v1/message/{name}"
+    };
+  }
+}
+
+message GetMessageRequest {
+  string name = 1 ;
+}
+
+message GetMessageResponse {
+  string msg = 1;
+}

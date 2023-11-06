@@ -1,0 +1,14 @@
+namespace: dev
+
+replicas:
+  - name: frontend
+    count: 1
+
+patches:
+  - path: patch.yaml
+    target:
+      kind: Deployment
+      name: frontend
+
+bases:
+  - ../../base

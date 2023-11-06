@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+    version: ${VERSION}
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        version: ${VERSION}
+    spec:
+      containers:
+        - name: frontend
+          image: ${TARGET_IMAGE}
+          ports:
+            - name: http
+              containerPort: 9080
+          env:
+            - name: SERVER_PORT
+              value: "9080"
+            - name: CLIENT_BACKEND_HOST
+              value: "backend"
+            - name: CLIENT_BACKEND_PORT
+              value: "50051"

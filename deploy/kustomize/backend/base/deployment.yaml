@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+    version: ${VERSION}
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        version: ${VERSION}
+    spec:
+      containers:
+        - name: backend
+          image: ${TARGET_IMAGE}
+          ports:
+            - name: grpc
+              containerPort: 50051
+          env:
+            - name: SERVER_PORT
+              value: "50051"
