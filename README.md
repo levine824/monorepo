@@ -2,7 +2,7 @@
 
 ## Overview 
 
-![monorepo.drawio](.\docs\assets\monorepo.drawio.png)
+![monorepo.drawio](docs/assets/monorepo.drawio.png)
 
 ## todo list
 
